@@ -1,10 +1,12 @@
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 class EventsStatisticImpl(private val clock: Clock): EventsStatistic {
     private val events: MutableMap<String, ArrayDeque<Instant>> = mutableMapOf()
     private val period = 1.hours
+    private val perTimeUnit = period / 1.minutes
 
     private fun removeOld(name: String?, now: Instant = clock.now()) {
         if (name == null) {
@@ -27,18 +29,18 @@ class EventsStatisticImpl(private val clock: Clock): EventsStatistic {
     }
 
     @Synchronized
-    override fun getEventsStatisticByName(name: String): Int {
-        val deque = events[name] ?: return 0
+    override fun getEventsStatisticByName(name: String): Double {
+        val deque = events[name] ?: return 0.0
         removeOld(name)
-        return deque.size
+        return deque.size / perTimeUnit
     }
 
     @Synchronized
-    override fun getAllEventStatistic(): Map<String, Int> {
+    override fun getAllEventStatistic(): Map<String, Double> {
         removeOld(null)
-        return events.mapValues { (_, v) -> v.size }
+        return events.mapValues { (_, v) -> v.size / perTimeUnit }
     }
 
     override fun toString(): String =
-        getAllEventStatistic().entries.sortedBy { it.key }.joinToString("\n") { (k, v) -> "$k: $v" }
+        getAllEventStatistic().entries.sortedBy { it.key }.joinToString("\n") { (k, v) -> "$k: ${v}rpm" }
 }
